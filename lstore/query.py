@@ -1,6 +1,7 @@
 from lstore.table import Table, Record
 from lstore.index import Index
-
+from lstore.page import Page
+import sys
 
 class Query:
     """
@@ -30,8 +31,9 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
-        schema_encoding = '0' * self.table.num_columns
+        
         pass
+       
 
     
     """
