@@ -1,6 +1,6 @@
 from lstore.table import Table, Record
 from lstore.index import Index
-from lstore.page import Page
+from lstore.page import Page, PageSet
 import sys
 
 class Query:
@@ -31,9 +31,18 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
+        if self.table.last_page == -1 or self.table.page_directory[self.table.last_page].has_capacity() == False:
+            self.table.page_directory[self.table.last_page+1] = PageSet(self.table.num_columns)
+            self.table.last_page += 1
+        print(self.table.page_directory)
+        print(self.table.page_directory[0])
+        for i in range(len(columns)):
+            print("page: ", i)
+            (self.table.page_directory[self.table.last_page]).pages[i].write(columns[i])
+            print(self.table.page_directory[self.table.last_page].pages[i])
         
-        pass
-       
+            
+        
 
     
     """

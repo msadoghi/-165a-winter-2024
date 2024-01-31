@@ -15,7 +15,6 @@ class Record:
         self.columns = columns
 
 class Table:
-
     """
     :param name: string         #Table name
     :param num_columns: int     #Number of Columns: all columns are integer
@@ -27,7 +26,7 @@ class Table:
         self.num_columns = num_columns
         self.page_directory = {}
         self.index = Index(self)
-        self.last_page = 0
+        self.last_page = -1
         pass
 
     def __merge(self):

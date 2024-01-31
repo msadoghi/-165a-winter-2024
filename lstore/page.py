@@ -1,4 +1,17 @@
 
+class PageSet:
+
+    def __init__(self, num_pages):
+        self.pages = [Page() for _ in range(num_pages)]
+    
+
+    def has_capacity(self):
+        ret = True
+        for i in self.pages:
+            if i.has_capacity() == False:
+                ret = False
+        return ret
+
 class Page:
 
     def __init__(self):
@@ -17,7 +30,4 @@ class Page:
         self.data.append(value)
         
     def __str__(self):
-        ret = ""
-        for i in self.data:
-            ret += str(i)
-        return ret
+        return str(self.data)
