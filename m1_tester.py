@@ -12,6 +12,8 @@ db = Database()
 #       Here the first column would be student id and primary key
 grades_table = db.create_table('Grades', 5, 0)
 
+print(grades_table.name)
+
 # create a query class for the grades table
 query = Query(grades_table)
 
