@@ -6,7 +6,10 @@ class Index:
 
     def __init__(self, table):
         # One index for each table. All our empty initially.
-        self.indices = [None] *  table.num_columns
+        self.indices = [None] * table.num_columns
+        # Initialize an array that contains indexing for each column.
+        # Create indexing for the primary key?
+        # Array holds whatever takes to locate datas - Tree or hash function
         pass
 
     """
@@ -14,6 +17,8 @@ class Index:
     """
 
     def locate(self, column, value):
+        # Locate specific value on specific column using the mechanism in index array.
+        # e.g. traverse on tree held by self.indices[column] look for value
         pass
 
     """
@@ -21,6 +26,7 @@ class Index:
     """
 
     def locate_range(self, begin, end, column):
+        # Same thing but range
         pass
 
     """
