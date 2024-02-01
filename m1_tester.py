@@ -38,6 +38,7 @@ print(records)
 
 # Check inserted records using select query
 for key in records:
+    print(key)
     # select function will return array of records 
     # here we are sure that there is only one record in t hat array
     record = query.select(key, 0, [1, 1, 1, 1, 1])[0]

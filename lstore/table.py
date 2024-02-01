@@ -27,6 +27,7 @@ class Table:
         self.page_directory = {}
         self.index = Index(self)
         self.last_page = -1
+        
         pass
 
     def __merge(self):
