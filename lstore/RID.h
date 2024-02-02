@@ -9,7 +9,7 @@ public:
     std::vector<int> page;
     std::vector<int> slot;
     int id;
-    RID (int pr, int p, int s, int i) : page_range(pr), page(p), slot(s), id(i) {};
+    RID (std::vector<int> pr, std::vector<int> p, std::vector<int> s, int i) : page_range(pr), page(p), slot(s), id(i) {};
 };
 
 #endif
