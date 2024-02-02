@@ -20,14 +20,18 @@ class Page {
 private:
     /* data */
     /// @TODO Move this to config file
-    const int PAGE_SIZE = 4096;
-    const int INT_SIZE = 4;
+    const int PAGE_SIZE = 4096; // bytes
+    const int INT_SIZE = 4; // bytes
+    int SLOT_NUM = PAGE_SIZE/4; // bytes
     int num_records = 0;
-    unsigned char data[PAGE_SIZE]; // Byte array, temporary
+    int* data = nullptr; // Data location(pointer)
+    std::array<int, SLOT_NUM> availability; // 0 is empty, 1 is occupied, 2 is deleted.
 
 public:
     Page ();
-    virtual ~Page ();
+    virtual ~Page () {
+        delete data[];
+    }
     bool has_capacity();
     void write(int value);
     friend ostream& operator<<(ostream& os, const Page& p);

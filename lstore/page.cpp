@@ -1,5 +1,7 @@
 #include <vector>
+#include <array>
 #include <iostream>
+#include <cstdlib>
 #include "page.h"
 
 PageRange::PageRange (int num_pages) {
@@ -24,6 +26,14 @@ bool PageRange::has_capacity () {
     return True;
 }
 
+Page::Page() {
+    data = (int*)malloc(PAGE_SIZE); //malloc takes number of bytes
+}
+
+Page::~Page() {
+    free(data);
+}
+
 /***
  *
  * Return if the page has capacity left or not.
@@ -44,6 +54,17 @@ bool Page::has_capacity() {
  */
 void Page::write(int value) {
     num_records++;
+    if (!has_capacity) {
+        // Page is full, add the data to new page
+    }
+    for (int loc = 0; loc < SLOT_NUM; loc++) {
+        if (availability[i] == 0) {
+            //insert on loc
+            int offset = loc * INT_SIZE; // Bytes from top of the page
+            int* insert = data + offset;
+            *insert = value;
+        }
+    }
     // Write value in data somehow.
     return;
 }
@@ -59,8 +80,8 @@ void Page::write(int value) {
  */
 ostream& operator<<(ostream& os, const Page& p)
 {
-    for (int i = 0; i < p.PAGE_SIZE; i++) {
-        os << p.data[i];
+    for (int i = 0; i < p.SLOT_NUM; i++) {
+        os << *(p.data + i);
     }
     return os;
 }
