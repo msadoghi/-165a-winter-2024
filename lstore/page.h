@@ -21,6 +21,7 @@ private:
     /* data */
     /// @TODO Move this to config file
     const int PAGE_SIZE = 4096;
+    const int INT_SIZE = 4;
     int num_records = 0;
     unsigned char data[PAGE_SIZE]; // Byte array, temporary
 

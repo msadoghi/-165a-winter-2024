@@ -16,7 +16,7 @@ PageRange::PageRange (int num_pages) {
  *
  */
 bool PageRange::has_capacity () {
-    for (std::vector<Page>::iterator itr = pages.begin(); itr < pages.end(); itr++) {
+    for (std::vector<Page>::iterator itr = pages.begin(); itr != pages.end(); itr++) {
         if (!(*itr.has_capacity())) {
             return False;
         }
@@ -32,10 +32,7 @@ bool PageRange::has_capacity () {
  *
  */
 bool Page::has_capacity() {
-    if (num_records * 28 < PAGE_SIZE) {
-        return True;
-    }
-    return False;
+    return(num_records * INT_SIZE < PAGE_SIZE);
 }
 
 /***

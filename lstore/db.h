@@ -4,7 +4,7 @@
 class Database{
   public:
     Database(){};
-    ~Database(){};
+    virtual ~Database(){};
     //void open(path); for next Milestone
     //void close(); for next Milestone
     Table create_table(std::string name, int num_columns, int key_index);

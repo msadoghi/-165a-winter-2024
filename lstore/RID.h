@@ -5,6 +5,8 @@
 
 class RID {
 public:
+    RID ();
+    virtual ~RID ();
     std::vector<int> page_range;
     std::vector<int> page;
     std::vector<int> slot;
