@@ -1,3 +1,7 @@
+#include <vector>
+#include <iostream>
+#include "page.h"
+
 PageRange::PageRange (int num_pages) {
     for (int i = 0; i < num_pages; i++) {
         pages.push_back(new Page());

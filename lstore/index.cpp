@@ -4,6 +4,8 @@
  *
  */
 
+#include <string>
+#include <vector>
 #include "index.h"
 #include "table.h"
 #include "RID.h"
