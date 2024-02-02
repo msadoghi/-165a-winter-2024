@@ -5,8 +5,8 @@ class Index {
 private:
     /* data */
     Table table;
-    std::vector</* Index data type */> indices(table.num_columns);
-
+    std::vector<std::map<int, std::vector<RID>>> indices(table.num_columns);
+    //each index is a map, each element in the map corresponds to a key and a vector of rids
 public:
     Index (Table t) : table(t) {};
     virtual ~Index ();
