@@ -31,7 +31,7 @@ bool PageRange::has_capacity () {
  * @return True if page has capacity left, False if not
  *
  */
-bool has_capacity() {
+bool Page::has_capacity() {
     if (num_records * 28 < PAGE_SIZE) {
         return True;
     }
@@ -45,7 +45,7 @@ bool has_capacity() {
  * @param int value Value to write into
  *
  */
-void write(int value) {
+void Page::write(int value) {
     num_records++;
     // Write value in data somehow.
     return;
