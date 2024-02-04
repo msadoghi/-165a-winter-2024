@@ -1,6 +1,10 @@
 #ifndef DBH
 #define DBH
 
+// This is for clang
+#include <string>
+#include <map>
+
 class Database{
   public:
     Database(){};
