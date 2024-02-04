@@ -1,5 +1,6 @@
 #ifndef RIDH
 #define RIDH
+#include <vector>
 
 // RID will hold page range, page number, slot number for each column in the record
 

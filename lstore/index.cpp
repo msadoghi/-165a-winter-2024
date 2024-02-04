@@ -6,8 +6,8 @@
 
 #include <string>
 #include <vector>
-#include <unordered_map>
-#include <unordered_multimap>
+#include <unordered_map> // unordered_multimap is part of this library
+#include <stdexcept> // Throwing errors
 #include "index.h"
 #include "table.h"
 #include "RID.h"
@@ -29,10 +29,10 @@ Index::Index(Table t) : table(t) {
 std::vector<RID> Index::locate (int column_number, int value) {
     std::vector<RID> matching_records; //holds the records that match the value
     auto index = indices.find(column_number); //find index for specified column
-    if(index == std::map::end){
+    if(index == indices.end()){
       throw std::invalid_argument("No index for that column was located.");
     }
-    auto range = index->equal_range(value); //check for all matching records in the index
+    auto range = (*index).second.equal_range(value); //check for all matching records in the index
     for(auto iter = range.first; iter != range.second; iter++){
         matching_records.insert(matching_records.end(), iter->second.begin(), iter->second.end());
     }
@@ -52,7 +52,7 @@ std::vector<RID> Index::locate (int column_number, int value) {
  */
 std::vector<RID> Index::locate_range(int begin, int end, int column_number) {
     std::vector<RID> matching_records; //holds the records that match a value in the range
-    std::vector<RID> all_matching_records //holds the matching records from the whole range
+    std::vector<RID> all_matching_records; //holds the matching records from the whole range
     for (int i = begin; i < end; i++) {
       matching_records = locate(column_number, i); //locate for each value in the range
       all_matching_records.insert(all_matching_records.end(), matching_records.begin(), matching_records.end());
@@ -80,7 +80,7 @@ void Index::create_index(int column_number) {
  */
 void Index::drop_index(int column_number) {
   auto index = indices.find(column_number);
-  if(index == std::map::end){
+  if(index == indices.end()){
     throw std::invalid_argument("No index for that column was located. The index was not dropped.");
   }
   indices.erase(column_number);
