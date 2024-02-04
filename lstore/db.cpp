@@ -1,8 +1,8 @@
 #include <map>
 #include <string>
 #include <stdexcept>
-#include "db.h"
 #include "table.h"
+#include "db.h"
 
 /***
  *
@@ -32,7 +32,7 @@ Table Database::create_table(std::string name, int num_columns, int key_index){
  *
  */
 void Database::drop_table(std::string name){
-  if(tables.find(name) == std::map::end){
+  if(tables.find(name) == tables.end()){
     throw std::invalid_argument("No table with that name was located. The table was not dropped.");
   }
   tables.erase(name);
@@ -49,8 +49,8 @@ void Database::drop_table(std::string name){
  *
  */
 Table Database::get_table(std::string name){
-  auto table = tables.find(name);
-  if(table == std::map::end){
+  std::map<std::string, Table>::iterator table = tables.find(name);
+  if(table == tables.end()){
     throw std::invalid_argument("No table with that name was located.");
   }
   return *table;
