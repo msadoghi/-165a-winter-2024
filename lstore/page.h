@@ -19,7 +19,7 @@ public:
     Page ();
     virtual ~Page ();
     bool has_capacity();
-    void write(int value);
+    int* write(int value);
     friend std::ostream& operator<<(std::ostream& os, const Page& p);
 
 };

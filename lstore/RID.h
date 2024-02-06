@@ -8,11 +8,9 @@ class RID {
 public:
     RID ();
     virtual ~RID ();
-    std::vector<int> page_range;
-    std::vector<int> page;
-    std::vector<int> slot;
+    std::vector<int*> pointers;
     int id;
-    RID (std::vector<int> pr, std::vector<int> p, std::vector<int> s, int i) : page_range(pr), page(p), slot(s), id(i) {};
+    RID (std::vector<int*> ptr, int i) : pointers(ptr), id(i) {};
 };
 
 #endif

@@ -53,7 +53,7 @@ bool Page::has_capacity() {
  * @param int value Value to write into
  *
  */
-void Page::write(int value) {
+int* Page::write(int value) {
     num_records++;
     if (!has_capacity()) {
         // Page is full, add the data to new page
@@ -64,11 +64,14 @@ void Page::write(int value) {
             int offset = location * sizeof(int); // Bytes from top of the page
             int* insert = data + offset;
             *insert = value;
-            break;
+            if (insert != nullptr) {
+                return insert;
+            } else {
+                return nullptr;
+            }
         }
     }
     // Write value in data somehow.
-    return;
 }
 
 /***
