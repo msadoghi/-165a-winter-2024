@@ -76,8 +76,8 @@ void Index::create_index(int column_number) {
             
             int value;
             int indirection_num = *(rid.pointers[0]);
-            int schema_num = *(rid.pointers[3]);
-            if ((schema_num >> (column_number - 1)) & 1 == 1) {
+            // int schema_num = *(rid.pointers[3]);
+            if (rid.check_schema(column_number)) {
                 RID update_rid = this->table->page_directory.find(indirection_num)->second;
                 value = *(update_rid.pointers[column_number]);
             } else {
