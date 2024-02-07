@@ -21,8 +21,8 @@ class Table {
 
     private:
     std::string name;
-    int key;
-    int num_columns;
+    int key; //primary key
+    int num_columns; //number of columns of actual data, excluding the metadata
     std::map<int, RID> page_directory; //<RID.id, RID>
     Index* index;
     int last_page = -1;
