@@ -7,7 +7,7 @@
 
 
 #include "lstore/db.h"
-#include "query.h"
+#include "lstore/query.h"
 #include "table.h"
 #include "__main__.h"
 

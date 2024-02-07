@@ -68,7 +68,6 @@ std::vector<RID> Index::locate_range(int begin, int end, int column_number) {
  *
  */
 void Index::create_index(int column_number) {
-    // std::vector<RID> rids;
     std::unordered_multimap<int, RID> index;
     for (int i = 0; i < this->table->num_insert; i++) {
         auto loc = this->table->page_directory.find(i);
