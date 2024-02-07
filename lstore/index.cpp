@@ -73,7 +73,16 @@ void Index::create_index(int column_number) {
         auto loc = this->table->page_directory.find(i);
         if (loc != this->table->page_directory.end()) { // if RID ID exist ie. not deleted
             RID rid = loc->second;
-            int value = *(rid.pointers[column_number]);
+            
+            int value;
+            int indirection_num = *(rid.pointers[0]);
+            int schema_num = *(rid.pointers[3]);
+            if ((schema_num >> (column_number - 1)) & 1 == 1) {
+                RID update_rid = this->table->page_directory.find(indirection_num)->second;
+                value = *(update_rid.pointers[column_number]);
+            } else {
+                value = *(rid.pointers[column_number]);
+            }
 
             index.insert({value, rid});
         }
@@ -96,4 +105,28 @@ void Index::drop_index(int column_number) {
   }
   indices.erase(column_number);
   return;
+}
+
+void Index::insert_index(RID rid, std::vector<int>columns) {
+    for (int i = 0; i< indices.size(); i++) {
+        if (indices[i].size() > 0) {    //if there is a index for that column
+            indices[i].insert({columns[i], rid});
+        }
+    }
+}
+
+void Index::update_index(RID rid, std::vector<int>columns, std::vector<int>old_columns){
+    for (int i = 0; i< indices.size(); i++) {
+        if (indices[i].size() > 0) {	//if there is a index for that column
+            int old_value = old_columns[i];
+            auto range = indices[i].equal_range(old_value);
+            for(auto itr = range.first; itr != range.second; itr++){
+                if (itr->second.id == rid.id) {
+                    indices[i].erase(itr);
+                    break;
+                }
+            }
+            indices[i].insert({columns[i], rid});
+        }
+    }
 }

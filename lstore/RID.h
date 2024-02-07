@@ -8,9 +8,8 @@
 class RID {
 public:
     const int INDIRECTION_COLUMN = 0;
-    const int RID_COLUMN = 1;
-    const int TIMESTAMP_COLUMN = 2;
-    const int SCHEMA_ENCODING_COLUMN = 3;
+    const int TIMESTAMP_COLUMN = 1;
+    const int SCHEMA_ENCODING_COLUMN = 2;
     RID ();
     virtual ~RID ();
     std::vector<int*> pointers;

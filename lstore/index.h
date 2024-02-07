@@ -18,6 +18,8 @@ public:
     void drop_index(int column_number);
     void setTable(Table* t){this->table = t;}
     //each index is a map, each element in the map corresponds to a key and a vector of rids
+    void insert_index(RID rid, std::vector<int>columns);
+    void Index::update_index(RID rid, std::vector<int>columns, std::vector<int>old_columns);
 };
 
 #endif
