@@ -18,6 +18,7 @@ public:
     int id;
     RID (std::vector<int*> ptr, int i) : pointers(ptr), id(i) {};
     bool check_schema (int column_num);
+    int column_with_one ();
 };
 
 #endif
