@@ -8,7 +8,7 @@ class Index {
 private:
     /* data */
     Table* table;
-    std::unordered_map<int, std::unordered_multimap<int, std::vector<RID>>> indices;
+    std::unordered_map<int, std::unordered_multimap<int, RID>> indices; //column, (value, RID)
 public:
     Index () {};
     virtual ~Index ();
