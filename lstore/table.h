@@ -8,9 +8,23 @@
 #include "index.h"
 #include "page.h"
 
+const int INDIRECTION_COLUMN = 0;
+const int TIMESTAMP_COLUMN = 1;
+const int SCHEMA_ENCODING_COLUMN = 2;
+
 // param name: string         #Table name
 // param num_columns: int     #Number of Columns: all columns are integer
 // param key: int             #Index of table key in columns
+class Record {
+    public:
+    Record(int rid, int key, std::vector<int> columns) : int(rid), key(key), columns(columns) {};
+
+    private:
+        int rid;
+        int key;
+        std::vector<int> columns;
+};
+
 class Table {
     public:
     Table(std::string name, int key, int num_columns): name(name), key(key), num_columns(num_columns) {

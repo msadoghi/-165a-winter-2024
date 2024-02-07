@@ -11,7 +11,7 @@ private:
     /// @TODO Move this to config file
     constexpr static int PAGE_SIZE = 4096; // bytes
     constexpr static int NUM_SLOTS = PAGE_SIZE/sizeof(int); // bytes
-    int num_records = 0;
+    int num_rows = 0;
     int* data = nullptr; // Data location(pointer)
     int availability[NUM_SLOTS] = {0}; // 0 is empty, 1 is occupied, 2 is deleted.
 

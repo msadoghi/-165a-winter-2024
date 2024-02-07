@@ -41,9 +41,9 @@ Page::~Page() {
  *
  */
 bool Page::has_capacity() {
-    return(num_records * sizeof(int) < PAGE_SIZE);
+    return(num_rows * sizeof(int) < PAGE_SIZE);
     // Can this be
-    // return(num_records < SLOT_NUM);
+    // return(num_rows < SLOT_NUM);
 }
 
 /***
@@ -54,7 +54,7 @@ bool Page::has_capacity() {
  *
  */
 int* Page::write(int value) {
-    num_records++;
+    num_rows++;
     if (!has_capacity()) {
         // Page is full, add the data to new page
     }
