@@ -2,10 +2,15 @@
 #define RIDH
 #include <vector>
 
-// RID will hold page range, page number, slot number for each column in the record
+// RID class contains everything associated with one records
+// This includes RID id number, pointers to each page including data and metadata
 
 class RID {
 public:
+    const int INDIRECTION_COLUMN = 0;
+    const int RID_COLUMN = 1;
+    const int TIMESTAMP_COLUMN = 2;
+    const int SCHEMA_ENCODING_COLUMN = 3;
     RID ();
     virtual ~RID ();
     std::vector<int*> pointers;
