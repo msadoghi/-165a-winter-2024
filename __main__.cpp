@@ -13,8 +13,6 @@
 
 Database db;
 
-std::vector<int> keys;
-
 Table grades_table = db.create_table("Grades",5,0);
 
 Query query = Query(grades_table);
@@ -111,6 +109,3 @@ void mainTest(){
 	testAggregation();
 	testDelete();
 }
-
-
-

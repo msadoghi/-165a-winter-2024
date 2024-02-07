@@ -4,7 +4,7 @@ CXXFLAGS= -g -Wall -Werror
 # This can be multiple files
 TARGET=lstore/main
 TESTERS=m1_tester
-DEPS=db index page table query
+DEPS=db index page query RID #table
 
 _DEPS=$(addprefix lstore/,$(DEPS))
 
@@ -30,12 +30,14 @@ lstore/index.o : lstore/index.cpp lstore/index.h lstore/table.h lstore/RID.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 lstore/page.o : lstore/page.cpp lstore/page.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+lstore/RID.o : lstore/RID.cpp lstore/RID.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 ## Add deps once they are done
 lstore/query.o : lstore/query.cpp lstore/query.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-lstore/table.o : lstore/table.cpp lstore/table.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+#lstore/table.o : lstore/table.cpp lstore/table.h
+#	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Toolkit
 Toolkit.o : Toolkit.cpp Toolkit.h
