@@ -12,9 +12,9 @@
 #include "table.h"
 #include "RID.h"
 
-Index::Index(Table t) : table(t) {
-    create_index(table.key);
-}
+// Index::Index() : table(t) {
+//     create_index(table.key);
+// }
 
 /***
  *
@@ -68,8 +68,9 @@ std::vector<RID> Index::locate_range(int begin, int end, int column_number) {
  *
  */
 void Index::create_index(int column_number) {
-    std::vector<RID> rids;
-    for (int i = 0; i < this->table->num_update; i++) {
+    // std::vector<RID> rids;
+    std::unordered_multimap<int, RID> index;
+    for (int i = 0; i < this->table->num_insert; i++) {
         auto loc = this->table->page_directory.find(i);
         if (loc != this->table->page_directory.end()) { // if RID ID exist ie. not deleted
             for (const auto& inner_pair : loc->second) {
