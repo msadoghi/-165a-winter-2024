@@ -34,7 +34,7 @@ std::vector<RID> Index::locate (int column_number, int value) {
     }
     auto range = (*index).second.equal_range(value); //check for all matching records in the index
     for(auto iter = range.first; iter != range.second; iter++){
-        matching_records.insert(iter->second);
+        matching_records.push_back(iter->second);
     }
     return matching_records;
 }
