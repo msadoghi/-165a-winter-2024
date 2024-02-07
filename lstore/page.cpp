@@ -3,8 +3,8 @@
 #include <cstdlib>
 #include "page.h"
 
-PageRange::PageRange (int num_pages) {
-    for (int i = 0; i < num_pages; i++) {
+PageRange::PageRange () {
+    for (int i = 0; i < NUM_PAGES; i++) {
         pages.push_back(new Page());
     }
 }
@@ -58,7 +58,7 @@ int* Page::write(int value) {
     if (!has_capacity()) {
         // Page is full, add the data to new page
     }
-    for (int location = 0; location < SLOT_NUM; location++) {
+    for (int location = 0; location < NUM_SLOTS; location++) {
         if (availability[location] == 0) {
             //insert on location
             int offset = location * sizeof(int); // Bytes from top of the page
@@ -85,7 +85,7 @@ int* Page::write(int value) {
  */
 std::ostream& operator<<(std::ostream& os, const Page& p)
 {
-    for (int i = 0; i < p.SLOT_NUM; i++) {
+    for (int i = 0; i < p.NUM_SLOTS; i++) {
         os << *(p.data + i*sizeof(int));
     }
     return os;

@@ -31,10 +31,11 @@ private:
     /// @TODO Move this to config file
     const int PAGE_SIZE = 4096;
     const int PAGE_RANGE_SIZE = 65536;
+    const int PAGE_NUM = PAGE_RANGE_SIZE / PAGE_SIZE;
 
 
 public:
-    PageRange (int num_pages);
+    PageRange ();
     virtual ~PageRange ();
     bool has_capacity ();
 };
