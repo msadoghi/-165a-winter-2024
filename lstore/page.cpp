@@ -5,7 +5,7 @@
 
 PageRange::PageRange () {
     for (int i = 0; i < NUM_PAGES; i++) {
-        pages.push_back(new Page());
+        page_range.push_back(new Page());
     }
 }
 
@@ -17,7 +17,7 @@ PageRange::PageRange () {
  *
  */
 bool PageRange::has_capacity () {
-    for (std::vector<Page*>::iterator itr = pages.begin(); itr != pages.end(); itr++) {
+    for (std::vector<Page*>::iterator itr = page_range.begin(); itr != page_range.end(); itr++) {
         if (!((**itr).has_capacity())) {
             return false;
         }
@@ -71,7 +71,6 @@ int* Page::write(int value) {
             }
         }
     }
-    // Write value in data somehow.
 }
 
 /***
