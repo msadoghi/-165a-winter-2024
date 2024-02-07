@@ -3,9 +3,9 @@
 #include <cstdlib>
 #include "page.h"
 
-PageRange::PageRange (int num_pages) {
-    for (int i = 0; i < num_pages; i++) {
-        pages.push_back(new Page());
+PageRange::PageRange () {
+    for (int i = 0; i < NUM_PAGES; i++) {
+        page_range.push_back(new Page());
     }
 }
 
@@ -17,7 +17,7 @@ PageRange::PageRange (int num_pages) {
  *
  */
 bool PageRange::has_capacity () {
-    for (std::vector<Page*>::iterator itr = pages.begin(); itr != pages.end(); itr++) {
+    for (std::vector<Page*>::iterator itr = page_range.begin(); itr != page_range.end(); itr++) {
         if (!((**itr).has_capacity())) {
             return false;
         }
@@ -53,22 +53,24 @@ bool Page::has_capacity() {
  * @param int value Value to write into
  *
  */
-void Page::write(int value) {
+int* Page::write(int value) {
     num_records++;
     if (!has_capacity()) {
         // Page is full, add the data to new page
     }
-    for (int location = 0; location < SLOT_NUM; location++) {
+    for (int location = 0; location < NUM_SLOTS; location++) {
         if (availability[location] == 0) {
             //insert on location
             int offset = location * sizeof(int); // Bytes from top of the page
             int* insert = data + offset;
             *insert = value;
-            break;
+            if (insert != nullptr) {
+                return insert;
+            } else {
+                return nullptr;
+            }
         }
     }
-    // Write value in data somehow.
-    return;
 }
 
 /***
@@ -82,7 +84,7 @@ void Page::write(int value) {
  */
 std::ostream& operator<<(std::ostream& os, const Page& p)
 {
-    for (int i = 0; i < p.SLOT_NUM; i++) {
+    for (int i = 0; i < p.NUM_SLOTS; i++) {
         os << *(p.data + i*sizeof(int));
     }
     return os;
