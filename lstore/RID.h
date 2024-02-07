@@ -2,7 +2,7 @@
 #define RIDH
 #include <vector>
 
-// RID class contains everything associated with one records
+// RID class contains everything associated with one record
 // This includes RID id number, pointers to each page including data and metadata
 
 class RID {
