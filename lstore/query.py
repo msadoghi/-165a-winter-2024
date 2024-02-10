@@ -66,7 +66,7 @@ class Query:
     def get_record(self, rid):
         pi = 0
         slot_index = rid
-        while slot_index > len(self.table.page_directory[0].data):
+        while slot_index >= len(self.table.page_directory[0].data):
             slot_index -= len(self.table.page_directory[0].data)
             pi += 1
         return self.table.page_directory[pi].records[slot_index]
