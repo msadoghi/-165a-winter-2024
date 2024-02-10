@@ -23,16 +23,20 @@ class Database():
         table = Table(name, num_columns, key_index)
         return table
 
-    
+
     """
     # Deletes the specified table
     """
     def drop_table(self, name):
-        pass
+        for i in range(len(self.tables)):
+            if self.tables[i].name == name:
+                del self.tables[i]
+                break
 
-    
     """
     # Returns table with the passed name
     """
     def get_table(self, name):
-        pass
+        for i in range(len(self.tables)):
+            if self.tables[i].name == name:
+                return self.tables[i]
