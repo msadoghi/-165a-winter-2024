@@ -23,10 +23,12 @@ class Query:
         self.delete_loop(record)
 
     def delete_loop(self, from_record):
+        if from_record == None:
+            return
         if from_record.indirection == -1:
             from_record.rid = -1
             return
-        self.delete_loop(from_record.indirection)
+        self.delete_loop(get_record(from_record.indirection))
         from_record.rid = -1
 
     def find_base_record(self, key):
