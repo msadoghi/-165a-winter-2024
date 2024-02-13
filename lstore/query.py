@@ -28,7 +28,7 @@ class Query:
         if from_record.indirection == -1:
             from_record.rid = -1
             return
-        self.delete_loop(get_record(from_record.indirection))
+        self.delete_loop(self.get_record(from_record.indirection))
         from_record.rid = -1
 
     def find_base_record(self, key):
@@ -41,7 +41,7 @@ class Query:
         return None
 
     def find_first_free_slot(self):
-        for pi in range(16):
+        for pi in range(self.table.page_range):
             page = self.table.page_directory[pi]
             if not page.has_capacity():
                 continue

@@ -33,8 +33,9 @@ class Table:
         self.key = key
         self.num_columns = num_columns
         self.page_directory = {}
+        self.page_range = 16
         self.farthest = {'pi': 0, 'slot_index': -1}
-        for i in range(16):
+        for i in range(self.page_range):
             self.page_directory[i] = Page()
             self.page_directory[i].id = i
         self.index = Index(self)
