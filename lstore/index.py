@@ -103,7 +103,7 @@ class Index:
     def locate(self, column, value):
         
         # All data that maps to value should hash to indices[column]
-        return self.indices[column].stored_records[value][:]
+        return self.indices[column].stored_records[value].rid
         
     """
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"

@@ -19,6 +19,6 @@ class Page:
 
     def write(self, value):
         if self.has_capacity():
-            index = self.find_first_free_slot()
+            index = self.num_records
             self.records[index] = value
             self.num_records += 1
