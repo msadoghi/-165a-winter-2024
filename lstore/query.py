@@ -3,7 +3,7 @@ from lstore.index import Index
 
 class Query:
     """
-    # Creates a Query object that can perform different queries on the specified table 
+    # Creates a Query object that can perform different queries on the specified table
     Queries that fail must return False
     Queries that succeed should return the result or True
     Any query that crashes (due to exceptions) should return False
@@ -11,7 +11,7 @@ class Query:
     def __init__(self, table):
         self.table = table
 
-    
+
     """
     # internal Method
     # Read a record with specified RID
@@ -40,11 +40,13 @@ class Query:
                 return page.records[j]
         return None
 
-    def find_first_free_slot(self):
+    def find_first_free_slot(self, replace=False):
         for pi in range(self.table.page_range):
             page = self.table.page_directory[pi]
             if not page.has_capacity():
                 continue
+            if not replace:
+                return {'pi': pi, 'slot_index': page.num_records}
             for i in range(len(page.data)):
                 if i in page.records and page.records[i].rid != -1:
                     continue
@@ -124,7 +126,7 @@ class Query:
         new_record.schema_encoding = '0' * self.table.num_columns
         page.write(new_record)
         return True
-    
+
     """
     # Read matching record with specified search key
     # :param search_key: the value you want to search based on
@@ -144,7 +146,7 @@ class Query:
                 selected.append(self.get_record(self.get_latest_version_rid(page.records[j].rid)))
                 return selected
         return selected
-    
+
     """
     # Read matching record with specified search key
     # :param search_key: the value you want to search based on
@@ -166,7 +168,7 @@ class Query:
                 return selected
         return selected
 
-    
+
     """
     # Update a record with specified key and columns
     # Returns True if update is succesful
@@ -204,7 +206,7 @@ class Query:
 
 
 
-    
+
     """
     :param start_range: int         # Start of the key range to aggregate 
     :param end_range: int           # End of the key range to aggregate 
@@ -216,7 +218,7 @@ class Query:
     def sum(self, start_range, end_range, aggregate_column_index):
         return self.sum_version(start_range, end_range, aggregate_column_index, 0)
 
-    
+
     """
     :param start_range: int         # Start of the key range to aggregate 
     :param end_range: int           # End of the key range to aggregate 
@@ -232,7 +234,7 @@ class Query:
         for i in a:
             count += i
         return count
-    
+
     """
     incremenets one column of the record
     this implementation should work if your select and update queries already work
