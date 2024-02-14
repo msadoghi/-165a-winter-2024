@@ -16,7 +16,6 @@ class Record:
         self.columns = columns
         self.indirection = -1
         self.schema_encoding = []
-        self.is_base = True
 
     def get_key(self):
         return self.columns[self.key]
@@ -36,9 +35,20 @@ class Table:
         self.page_range = 16
         self.farthest = {'pi': 0, 'slot_index': -1}
         for i in range(self.page_range):
-            self.page_directory[i] = Page()
-            self.page_directory[i].id = i
+            self.page_directory[i] = {}
+            page_stack = self.page_directory[i]
+            page_stack[0] = Page()
+            page_stack[0].id = i
+            page_stack['size'] = 1
         self.index = Index(self)
+
+    def add_tail(self, pi):
+        tail = Page()
+        page_stack = self.page_directory[pi]
+        tail.id = page_stack[0].id
+        page_stack[page_stack['size']] = tail
+        page_stack['size'] += 1
+        return tail
 
     def __merge(self):
         print("merge is happening")

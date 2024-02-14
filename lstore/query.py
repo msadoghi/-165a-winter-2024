@@ -1,5 +1,7 @@
 from lstore.table import Table, Record
 from lstore.index import Index
+import math
+import time
 
 class Query:
     """
@@ -19,30 +21,33 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
-        record = self.find_base_record(primary_key)
-        self.delete_loop(record)
+        base = self.find_base_record(primary_key, 0)
+        record = self.get_record(base['pi'], base['rid'])
+        self.delete_loop(base['pi'], record)
 
-    def delete_loop(self, from_record):
-        if from_record == None:
-            return
+    def delete_loop(self, page_id, from_record):
+        #if from_record == None:
+            #return
         if from_record.indirection == -1:
             from_record.rid = -1
             return
-        self.delete_loop(self.get_record(from_record.indirection))
+        self.delete_loop(page_id, self.get_record(page_id, from_record.indirection))
         from_record.rid = -1
 
-    def find_base_record(self, key):
+    def find_base_record(self, key, key_index):
+        if self.table.index.indices[key_index] is not None:
+            return self.table.index.locate(key_index, key)
         for i in range(self.table.farthest['pi'] + 1):
-            page = self.table.page_directory[i]
-            for j in range(self.table.farthest['slot_index'] + 1):
-                if not self.check_record_validity(page.records[j], key) or not page.records[j].is_base:
+            page = self.table.page_directory[i][0]
+            for j in range(len(page.data)):
+                if j not in page.records or not self.check_record_validity(page.records[j], key, key_index):
                     continue
-                return page.records[j]
+                return {'pi': i, 'rid': page.records[j].rid}
         return None
 
     def find_first_free_slot(self, replace=False):
         for pi in range(self.table.page_range):
-            page = self.table.page_directory[pi]
+            page = self.table.page_directory[pi][0]
             if not page.has_capacity():
                 continue
             if not replace:
@@ -57,8 +62,8 @@ class Query:
         if (slot['pi'] > self.table.farthest['pi']) or (slot['pi'] == self.table.farthest['pi'] and slot['slot_index'] > self.table.farthest['slot_index']):
             self.table.farthest = slot
 
-    def check_record_validity(self, record, key):
-        if record.rid == -1 or record.get_key() != key:
+    def check_record_validity(self, record, key, key_index):
+        if record.rid == -1 or record.columns[key_index] != key:
             return False
         return True
 
@@ -67,45 +72,48 @@ class Query:
             return False
         return True
 
-    def get_record(self, rid):
-        pi = 0
-        slot_index = rid
-        while slot_index >= len(self.table.page_directory[0].data):
-            slot_index -= len(self.table.page_directory[0].data)
-            pi += 1
-        return self.table.page_directory[pi].records[slot_index]
+    def get_record(self, page_id, rid):
+        page_stack = self.table.page_directory[page_id]
+        index = math.floor(rid / len(page_stack[0].data))
+        slot_index = rid % len(page_stack[0].data)
+        return page_stack[index].records[slot_index]
 
-    def get_latest_version_rid(self, from_rid):
-        indirection = self.get_record(from_rid).indirection
+    def get_latest_version_rid(self, page_id, from_rid):
+        indirection = self.get_record(page_id, from_rid).indirection
         if indirection == -1:
             return from_rid
-        return self.get_latest_version_rid(indirection)
+        return self.get_latest_version_rid(page_id, indirection)
 
-    def get_version_count(self, from_rid, count=1):
-        indirection = self.get_record(from_rid).indirection
+    def get_version_count(self, page_id, from_rid, count=1):
+        indirection = self.get_record(page_id, from_rid).indirection
         if indirection == -1:
             return count
-        return self.get_version_count(indirection, count + 1)
+        return self.get_version_count(page_id, indirection, count + 1)
 
-    def get_relative_version_rid(self, base_rid, relative_version):
-        counter = self.get_version_count(base_rid) + relative_version
-        return self.relative_version_rid_loop(base_rid, counter)
+    def get_relative_version_rid(self, page_id, base_rid, relative_version):
+        counter = self.get_version_count(page_id, base_rid) + relative_version
+        return self.relative_version_rid_loop(page_id, base_rid, counter)
 
-    def relative_version_rid_loop(self, from_rid, counter):
-        indirection = self.get_record(from_rid).indirection
+    def relative_version_rid_loop(self, page_id, from_rid, counter):
+        indirection = self.get_record(page_id, from_rid).indirection
         if indirection == -1 or counter <= 1:
             return from_rid
-        return self.relative_version_rid_loop(indirection, counter - 1)
+        return self.relative_version_rid_loop(page_id, indirection, counter - 1)
 
     def get_values_from_range(self, start_range, end_range, key_index, search_index, relative_version=0):
         result = []
+        if self.table.index.indices[key_index] is not None:
+            info = self.table.index.locate_range(start_range, end_range, key_index)
+            for base in info:
+                result.append(self.get_record(base['pi'], self.get_relative_version_rid(base['pi'], base['rid'], relative_version)).columns[search_index])
+            return result
         for i in range(self.table.farthest['pi'] + 1):
-            page = self.table.page_directory[i]
-            for j in range(self.table.farthest['slot_index'] + 1):
-                if page.records[j].rid == -1 or not page.records[j].is_base:
+            page = self.table.page_directory[i][0]
+            for j in range(len(page.data)):
+                if j not in page.records or page.records[j].rid == -1:
                     continue
-                record = self.get_record(self.get_relative_version_rid(page.records[j].rid, relative_version))
-                if not self.check_range(start_range, end_range, record.get_key()):
+                record = self.get_record(i, self.get_relative_version_rid(i, page.records[j].rid, relative_version))
+                if not self.check_range(start_range, end_range, record.columns[key_index]):
                     continue
                 result.append(record.columns[search_index])
         return result
@@ -120,11 +128,14 @@ class Query:
     def insert(self, *columns):
         slot = self.find_first_free_slot()
         self.check_is_farthest(slot)
-        page = self.table.page_directory[slot['pi']]
-        rid = slot['pi'] * len(page.data) + slot['slot_index']
+        page = self.table.page_directory[slot['pi']][0]
+        rid = slot['slot_index']
         new_record = Record(rid, 0, columns)
         new_record.schema_encoding = '0' * self.table.num_columns
         page.write(new_record)
+        for i in range(len(columns)):
+            if self.table.index.indices[i] is not None:
+                self.table.index.indices[i].insert_record(columns[i], rid, slot['pi'])
         return True
 
     """
@@ -137,15 +148,7 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select(self, search_key, search_key_index, projected_columns_index):
-        selected = []
-        for i in range(self.table.farthest['pi'] + 1):
-            page = self.table.page_directory[i]
-            for j in range(self.table.farthest['slot_index'] + 1):
-                if not self.check_record_validity(page.records[j], search_key) or page.records[j].key != search_key_index:
-                    continue
-                selected.append(self.get_record(self.get_latest_version_rid(page.records[j].rid)))
-                return selected
-        return selected
+        return self.select_version(search_key, search_key_index, projected_columns_index, 0)
 
     """
     # Read matching record with specified search key
@@ -158,14 +161,8 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
-        selected = []
-        for i in range(self.table.farthest['pi'] + 1):
-            page = self.table.page_directory[i]
-            for j in range(self.table.farthest['slot_index'] + 1):
-                if not self.check_record_validity(page.records[j], search_key) or page.records[j].key != search_key_index or not page.records[j].is_base:
-                    continue
-                selected.append(self.get_record(self.get_relative_version_rid(page.records[j].rid, relative_version)))
-                return selected
+        base = self.find_base_record(search_key, search_key_index)
+        selected = [self.get_record(base['pi'], self.get_relative_version_rid(base['pi'], base['rid'], relative_version))]
         return selected
 
 
@@ -175,35 +172,55 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
+        base = self.find_base_record(primary_key, 0)
+        last_rid = self.get_latest_version_rid(base['pi'], base['rid'])
+        last_record = self.get_record(base['pi'], last_rid)
+        page_stack = self.table.page_directory[base['pi']]
+        index = page_stack['size'] - 1
+        tail = page_stack[index]
+        if index == 0 or not tail.has_capacity():
+            tail = self.table.add_tail(base['pi'])
+            index += 1
+        rid = index * len(page_stack[0].data) + tail.num_records
+        last_record.indirection = rid
+        new_columns = []
+        for k, v in enumerate(columns):
+            if v is None:
+                new_columns.append(last_record.columns[k])
+            else:
+                new_columns.append(v)
+        new_record = Record(rid, 0, new_columns)
+        tail.write(new_record)
+        return True
+
         last_rid = -1
         for i in range(self.table.farthest['pi'] + 1):
-            page = self.table.page_directory[i]
-            for j in range(self.table.farthest['slot_index'] + 1):
-                if not self.check_record_validity(page.records[j], primary_key) or not page.records[j].is_base:
+            page_stack = self.table.page_directory[i]
+            page = page_stack[0]
+            for j in range(len(page.data)):
+                if j not in page.records or not self.check_record_validity(page.records[j], primary_key, page.records[j].key):
                     continue
                 last_rid = page.records[j].rid
                 break
             if last_rid != -1:
-                break
-        if last_rid == -1:
-            return False
-        last_record = self.get_record(self.get_latest_version_rid(last_rid))
-        slot = self.find_first_free_slot()
-        self.check_is_farthest(slot)
-        page = self.table.page_directory[slot['pi']]
-        rid = slot['pi'] * len(page.data) + slot['slot_index']
-        last_record.indirection = rid
-        new_columns = []
-        for i, v in enumerate(columns):
-            if v is None:
-                new_columns.append(last_record.columns[i])
-            else:
-                new_columns.append(v)
-        new_record = Record(rid, 0, new_columns)
-        new_record.is_base = False
-        page.write(new_record)
-        return True
-
+                last_record = self.get_record(i, self.get_latest_version_rid(i, last_rid))
+                index = page_stack['size'] - 1
+                tail = page_stack[index]
+                if index == 0 or not tail.has_capacity():
+                    tail = self.table.add_tail(i)
+                    index += 1
+                rid = index * len(page.data) + tail.num_records
+                last_record.indirection = rid
+                new_columns = []
+                for k, v in enumerate(columns):
+                    if v is None:
+                        new_columns.append(last_record.columns[k])
+                    else:
+                        new_columns.append(v)
+                new_record = Record(rid, 0, new_columns)
+                tail.write(new_record)
+                return True
+        return False
 
 
 

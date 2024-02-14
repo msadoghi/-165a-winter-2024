@@ -10,7 +10,7 @@ class Page:
     def has_capacity(self):
         return len(self.data) - self.num_records > 0
 
-    def find_first_free_slot(self):
+    def find_first_free_slot(self, replace=False):
         for i in range(len(self.data)):
             if i in self.records and self.records[i].rid != -1:
                 continue
