@@ -1,5 +1,5 @@
 from datetime import datetime
-from lstore.page import Page, PageRange
+from lstore.page import Page
 from lstore.config import *
 import numpy as np
 import pickle

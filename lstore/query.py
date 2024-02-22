@@ -1,143 +1,59 @@
 from lstore.table import Table, Record
 from lstore.index import Index
-import math
-import time
+from datetime import datetime
+from lstore.config import *
 
 class Query:
     """
-    # Creates a Query object that can perform different queries on the specified table
+    # Creates a Query object that can perform different queries on the specified table 
     Queries that fail must return False
     Queries that succeed should return the result or True
     Any query that crashes (due to exceptions) should return False
     """
     def __init__(self, table):
         self.table = table
-
+        self.index = Index(table)
 
     """
     # internal Method
-    # Read a record with specified RID
+    # Read a record with specified key
     # Returns True upon succesful deletion
     # Return False if record doesn't exist or is locked due to 2PL
     """
-    def delete(self, primary_key):
-        base = self.find_base_record(primary_key, 0)
-        record = self.get_record(base['pi'], base['rid'])
-        self.delete_loop(base['pi'], record)
 
-    def delete_loop(self, page_id, from_record):
-        #if from_record == None:
-            #return
-        if from_record.indirection == -1:
-            from_record.rid = -1
-            return
-        self.delete_loop(page_id, self.get_record(page_id, from_record.indirection))
-        from_record.rid = -1
-
-    def find_base_record(self, key, key_index):
-        if self.table.index.indices[key_index] is not None:
-            return self.table.index.locate(key_index, key)
-        for i in range(self.table.farthest['pi'] + 1):
-            page = self.table.page_directory[i][0]
-            for j in range(len(page.data)):
-                if j not in page.records or not self.check_record_validity(page.records[j], key, key_index):
-                    continue
-                return {'pi': i, 'rid': page.records[j].rid}
-        return None
-
-    def find_first_free_slot(self, replace=False):
-        for pi in range(self.table.page_range):
-            page = self.table.page_directory[pi][0]
-            if not page.has_capacity():
-                continue
-            if not replace:
-                return {'pi': pi, 'slot_index': page.num_records}
-            for i in range(len(page.data)):
-                if i in page.records and page.records[i].rid != -1:
-                    continue
-                return {'pi': pi, 'slot_index': i}
-        return None
-
-    def check_is_farthest(self, slot):
-        if (slot['pi'] > self.table.farthest['pi']) or (slot['pi'] == self.table.farthest['pi'] and slot['slot_index'] > self.table.farthest['slot_index']):
-            self.table.farthest = slot
-
-    def check_record_validity(self, record, key, key_index):
-        if record.rid == -1 or record.columns[key_index] != key:
-            return False
+    def delete(self, key):
+        rid = self.table.key_RID[key]
+        del self.table.key_RID[key]
+        del self.table.page_directory[rid]
         return True
-
-    def check_range(self, start, end, v):
-        if v < start or v > end:
-            return False
-        return True
-
-    def get_record(self, page_id, rid):
-        page_stack = self.table.page_directory[page_id]
-        index = math.floor(rid / len(page_stack[0].data))
-        slot_index = rid % len(page_stack[0].data)
-        return page_stack[index].records[slot_index]
-
-    def get_latest_version_rid(self, page_id, from_rid):
-        indirection = self.get_record(page_id, from_rid).indirection
-        if indirection == -1:
-            return from_rid
-        return self.get_latest_version_rid(page_id, indirection)
-
-    def get_version_count(self, page_id, from_rid, count=1):
-        indirection = self.get_record(page_id, from_rid).indirection
-        if indirection == -1:
-            return count
-        return self.get_version_count(page_id, indirection, count + 1)
-
-    def get_relative_version_rid(self, page_id, base_rid, relative_version):
-        counter = self.get_version_count(page_id, base_rid) + relative_version
-        return self.relative_version_rid_loop(page_id, base_rid, counter)
-
-    def relative_version_rid_loop(self, page_id, from_rid, counter):
-        indirection = self.get_record(page_id, from_rid).indirection
-        if indirection == -1 or counter <= 1:
-            return from_rid
-        return self.relative_version_rid_loop(page_id, indirection, counter - 1)
-
-    def get_values_from_range(self, start_range, end_range, key_index, search_index, relative_version=0):
-        result = []
-        if self.table.index.indices[key_index] is not None:
-            info = self.table.index.locate_range(start_range, end_range, key_index)
-            for base in info:
-                result.append(self.get_record(base['pi'], self.get_relative_version_rid(base['pi'], base['rid'], relative_version)).columns[search_index])
-            return result
-        for i in range(self.table.farthest['pi'] + 1):
-            page = self.table.page_directory[i][0]
-            for j in range(len(page.data)):
-                if j not in page.records or page.records[j].rid == -1:
-                    continue
-                record = self.get_record(i, self.get_relative_version_rid(i, page.records[j].rid, relative_version))
-                if not self.check_range(start_range, end_range, record.columns[key_index]):
-                    continue
-                result.append(record.columns[search_index])
-        return result
-
 
     """
     # Insert a record with specified columns
     # Return True upon succesful insertion
     # Returns False if insert fails for whatever reason
     """
-
     def insert(self, *columns):
-        slot = self.find_first_free_slot()
-        self.check_is_farthest(slot)
-        page = self.table.page_directory[slot['pi']][0]
-        rid = slot['slot_index']
-        new_record = Record(rid, 0, columns)
-        new_record.schema_encoding = '0' * self.table.num_columns
-        page.write(new_record)
-        for i in range(len(columns)):
-            if self.table.index.indices[i] is not None:
-                self.table.index.indices[i].insert_record(columns[i], rid, slot['pi'])
+        key = columns[self.table.key_column]
+        if key in self.table.key_RID.keys():
+            return False;
+        
+        self.table.new_record.acquire()
+        SCHEMA_ENCODING_COLUMN = '0' * self.table.num_columns
+        indirection = SPECIAL_NULL_VALUE
+        rid = self.table.num_records
+        time = datetime.now().strftime("%Y%m%d%H%M%S")
+        base_id = rid
+        meta_data = [rid, int(time), SCHEMA_ENCODING_COLUMN, indirection, base_id]
+        columns = list(columns)
+        meta_data.extend(columns)
+        
+        # self.table.lock_manager[key].acquire_wlock()
+        self.table.base_write(meta_data)
+        # self.table.lock_manager[key].release_wlock()
+        self.table.new_record.release()
         return True
 
+    
     """
     # Read matching record with specified search key
     # :param search_key: the value you want to search based on
@@ -147,9 +63,76 @@ class Query:
     # Returns False if record locked by TPL
     # Assume that select will never be called on a key that doesn't exist
     """
+    def find_column_bufferID(self, column):
+        buffer_rid = []
+        num_base = self.table.num_records - self.table.num_updates
+        num_page_range = num_base % RECORDS_PER_PAGE_RANGE + 1
+        num_base_page = num_base % RECORDS_PER_PAGE + 1
+        for page_range in range(num_page_range):
+            for base_page in range(num_base_page):
+                buffer_id = (self.table.table_path, "base", str(column), str(page_range), str(base_page))
+                buffer_rid.append(buffer_id) 
+        
+        return buffer_rid
+    
+    
     def select(self, search_key, search_key_index, projected_columns_index):
-        return self.select_version(search_key, search_key_index, projected_columns_index, 0)
+        records = []
+        column = []
+        rids = []
+        
+        if search_key_index == self.table.key_column:
+            if search_key in self.table.key_RID.keys():
+                rids.append(self.table.key_RID[search_key])
+        elif self.table.index.has_index(search_key_index):
+            rids = self.table.index.locate(search_key_index, search_key)
+        else:
+            rids = self.table.find_value_rid(search_key_index, search_key)
+            
+        if len(rids) == 0:
+                return []
+        
+        for rid in rids:
+            result = self.table.find_record(rid)
+            # print(result)
+            column = result[(META_COLUMN_COUNT + 1):(META_COLUMN_COUNT + 1) + self.table.num_columns + 1]
+        
+            # if record has update record
+            if result[INDIRECTION_COLUMN] != SPECIAL_NULL_VALUE:
+            # use indirection of base record to find tail record
+                rid_tail = result[INDIRECTION_COLUMN]
+                
+                result_tail = self.table.find_record(rid_tail)
+                updated_column = result_tail[(META_COLUMN_COUNT + 1):(META_COLUMN_COUNT + 1) + self.table.num_columns + 1]
+                encoding = result[SCHEMA_ENCODING_COLUMN]
+                encoding = self.find_changed_col(encoding)
+                for i, value in enumerate(encoding):
+                    if value == 1:
+                        column[i] = updated_column[i]
+        
+            # take columns that is requested
+            for i in range(self.table.num_columns):
+                if projected_columns_index[i] == 0:
+                    column[i] = None
+            record = Record(rid, search_key, column)
+            records.append(record)
+            
+        return records
 
+    # helper function to find which columns have updated
+    def find_changed_col(self, encoding):
+        count = self.table.num_columns
+        result = [0 for _ in range(count)]
+        if encoding == 0:
+            return result
+        while encoding != 0:
+            if encoding % 10 == 1:
+                result[count - 1] = 1
+            encoding = encoding // 10
+            count -= 1
+        return result
+        
+    
     """
     # Read matching record with specified search key
     # :param search_key: the value you want to search based on
@@ -161,69 +144,75 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
-        base = self.find_base_record(search_key, search_key_index)
-        selected = [self.get_record(base['pi'], self.get_relative_version_rid(base['pi'], base['rid'], relative_version))]
-        return selected
+        pass
 
-
+    
     """
     # Update a record with specified key and columns
     # Returns True if update is succesful
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
-        base = self.find_base_record(primary_key, 0)
-        last_rid = self.get_latest_version_rid(base['pi'], base['rid'])
-        last_record = self.get_record(base['pi'], last_rid)
-        page_stack = self.table.page_directory[base['pi']]
-        index = page_stack['size'] - 1
-        tail = page_stack[index]
-        if index == 0 or not tail.has_capacity():
-            tail = self.table.add_tail(base['pi'])
-            index += 1
-        rid = index * len(page_stack[0].data) + tail.num_records
-        last_record.indirection = rid
-        new_columns = []
-        for k, v in enumerate(columns):
-            if v is None:
-                new_columns.append(last_record.columns[k])
-            else:
-                new_columns.append(v)
-        new_record = Record(rid, 0, new_columns)
-        tail.write(new_record)
+        
+        columns = list(columns)
+        
+        if primary_key not in self.table.key_RID.keys():
+            return False
+        if columns[self.table.key_column] in self.table.key_RID.keys():
+            return False
+        if columns[self.table.key_column] != None:
+            return False
+        
+        self.table.update_record.acquire()
+        tail_rid = self.table.num_records
+        time = datetime.now().strftime("%Y%m%d%H%M%S")
+        rid = self.table.key_RID[primary_key]
+        base_id = rid
+        result = self.table.find_record(rid)
+        indirection = result[INDIRECTION_COLUMN]
+        new_encoding = '' 
+        location_base = self.table.page_directory[rid]
+        
+        # first time update
+        if indirection == SPECIAL_NULL_VALUE:
+            tail_indirect = rid
+            for i, value in enumerate(columns):
+                if value == None:
+                    new_encoding += '0'
+                    columns[i] = SPECIAL_NULL_VALUE
+                else:
+                    new_encoding += '1'
+        else:
+            latest_tail = self.table.find_record(indirection)
+            tail_indirect = latest_tail[RID_COLUMN]
+            encoding = latest_tail[SCHEMA_ENCODING_COLUMN]
+            encoding = self.find_changed_col(encoding)
+            for i, value in enumerate(encoding):
+                if columns[i] != None:
+                    new_encoding += '1'
+                else:
+                    columns[i] = latest_tail[i + (META_COLUMN_COUNT + 1)]
+                    if latest_tail[i + (META_COLUMN_COUNT + 1)] != SPECIAL_NULL_VALUE:
+                        new_encoding += '1'
+                    else:
+                        new_encoding += '0'
+        
+        # update base record
+        self.table.update_value(INDIRECTION_COLUMN, location_base, tail_rid)
+        self.table.update_value(SCHEMA_ENCODING_COLUMN, location_base, new_encoding)
+        
+        meta_data = [tail_rid, int(time), new_encoding, tail_indirect, base_id]
+        meta_data.extend(columns)
+        self.table.tail_write(meta_data)
+        
+        self.table.update_record.release()
+        
+        # for merge
+        # location = self.table.page_directory[tail_rid]
+        # self.table.merge_trigger(location)
         return True
 
-        last_rid = -1
-        for i in range(self.table.farthest['pi'] + 1):
-            page_stack = self.table.page_directory[i]
-            page = page_stack[0]
-            for j in range(len(page.data)):
-                if j not in page.records or not self.check_record_validity(page.records[j], primary_key, page.records[j].key):
-                    continue
-                last_rid = page.records[j].rid
-                break
-            if last_rid != -1:
-                last_record = self.get_record(i, self.get_latest_version_rid(i, last_rid))
-                index = page_stack['size'] - 1
-                tail = page_stack[index]
-                if index == 0 or not tail.has_capacity():
-                    tail = self.table.add_tail(i)
-                    index += 1
-                rid = index * len(page.data) + tail.num_records
-                last_record.indirection = rid
-                new_columns = []
-                for k, v in enumerate(columns):
-                    if v is None:
-                        new_columns.append(last_record.columns[k])
-                    else:
-                        new_columns.append(v)
-                new_record = Record(rid, 0, new_columns)
-                tail.write(new_record)
-                return True
-        return False
-
-
-
+    
     """
     :param start_range: int         # Start of the key range to aggregate 
     :param end_range: int           # End of the key range to aggregate 
@@ -233,9 +222,32 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum(self, start_range, end_range, aggregate_column_index):
-        return self.sum_version(start_range, end_range, aggregate_column_index, 0)
+        total_sum = 0
+        column_index = aggregate_column_index + (META_COLUMN_COUNT + 1)
+        for key in range(start_range, end_range + 1):
+            if key in self.table.key_RID.keys():
+                rid = self.table.key_RID[key]
+                record = self.table.find_record(rid)
+                # never been updated
+                if record[INDIRECTION_COLUMN] == SPECIAL_NULL_VALUE:
+                    total_sum += record[column_index]
+                else:
+                # have been updated
+                    tail_rid = record[INDIRECTION_COLUMN]
+                    tail_record = self.table.find_record(tail_rid)
+                    updated_column = tail_record[(META_COLUMN_COUNT + 1):(META_COLUMN_COUNT + 1) + self.table.num_columns + 1]
+                    encoding = tail_record[SCHEMA_ENCODING_COLUMN]
+                    encoding = self.find_changed_col(encoding)
+                    # print(updated_column)
+                    # print(tail_record)
+                    if encoding[aggregate_column_index] == 1:
+                        total_sum += updated_column[aggregate_column_index]
+                    else:
+                        total_sum += record[column_index]
 
+        return total_sum
 
+    
     """
     :param start_range: int         # Start of the key range to aggregate 
     :param end_range: int           # End of the key range to aggregate 
@@ -246,12 +258,9 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum_version(self, start_range, end_range, aggregate_column_index, relative_version):
-        count = 0
-        a = self.get_values_from_range(start_range, end_range, 0, aggregate_column_index, relative_version)
-        for i in a:
-            count += i
-        return count
+        pass
 
+    
     """
     incremenets one column of the record
     this implementation should work if your select and update queries already work
@@ -261,7 +270,7 @@ class Query:
     # Returns False if no record matches key or if target record is locked by 2PL.
     """
     def increment(self, key, column):
-        r = self.select(key, self.table.key, [1] * self.table.num_columns)[0]
+        r = self.select(key, self.table.key_column, [1] * self.table.num_columns)[0]
         if r is not False:
             updated_columns = [None] * self.table.num_columns
             updated_columns[column] = r[column] + 1
