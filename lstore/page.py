@@ -1,9 +1,10 @@
+from lstore.config import *
 
 class Page:
 
     def __init__(self):
         self.num_records = 0
-        self.data = bytearray(4096)
+        self.data = bytearray(PAGE_SIZE)
         self.records = {}
         self.id = -1
 
