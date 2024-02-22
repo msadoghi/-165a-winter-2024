@@ -3,7 +3,7 @@ from lstore.page import Page
 from lstore.config import *
 from time import time
 
-
+# One record has a Page per column
 class Record:
 
     def __init__(self, rid, key, columns):
@@ -20,8 +20,10 @@ class Table:
 
     """
     :param name: string         #Table name
-    :param num_columns: int     #Number of Columns: all columns are integer
     :param key: int             #Index of table key in columns
+    :param num_columns: int     #Number of Columns: all columns are integer
+    :param page_directory: dict #Page directory
+    :param num_page_ranges: int #Number of page ranges
     """
     def __init__(self, name, num_columns, key):
         self.name = name
@@ -29,6 +31,7 @@ class Table:
         self.num_columns = num_columns
         self.page_directory = {}
         self.page_range = BASE_PAGE_MAX
+        self.tail_pages = []
         self.farthest = {'pi': 0, 'slot_index': -1}
         for i in range(self.page_range):
             self.page_directory[i] = {}

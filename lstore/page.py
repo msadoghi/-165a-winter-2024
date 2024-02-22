@@ -1,5 +1,7 @@
 from lstore.config import *
 
+# Base/Tail pages are a logical concept
+# Base/Tail pages consist of multiple physical pages
 class Page:
 
     def __init__(self):
