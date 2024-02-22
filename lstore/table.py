@@ -16,6 +16,48 @@ class Record:
     def get_key(self):
         return self.columns[self.key]
 
+# One pagerange tracks a set of base pages & tail pages
+class PageRange:
+
+    def __init__(self):
+        self.base_page_index = 0 
+        self.tail_page_index = 0 
+        self.base_page = [None for _ in range(BASE_PAGE_MAX)]
+        self.tail_page = [None] 
+        
+    def is_page_exist(self, index, type):
+        if type == "base":
+            return self.base_page[index] != None
+        else:
+            return self.tail_page[index] != None
+        
+    # content will be a page object(read from disk) if passed in    
+    def create_base_page(self, index, content = None): 
+        if content == None:
+            self.base_page[index] = Page()
+        else:
+            self.base_page[index] = content
+
+    def inc_base_page_index(self):
+        self.base_page_index += 1
+
+    def current_base_page(self):
+        return self.base_page[self.base_page_index]
+
+    def current_tail_page(self):
+        return self.tail_page[self.tail_page_index]
+
+    def add_tail_page(self):
+        if self.tail_page[self.tail_page_index] == None:
+            self.tail_page[self.tail_page_index] = Page()
+        else:
+            self.tail_page.append(Page())
+            self.tail_page_index += 1
+
+    def last_base_page(self):
+        return self.base_page_index == BASE_PAGE_MAX - 1
+
+# Table keeps track of pageranges
 class Table:
 
     """
