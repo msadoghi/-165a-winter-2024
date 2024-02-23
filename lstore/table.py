@@ -1,12 +1,13 @@
 from lstore.index import Index
 from lstore.config import *
-from lstore.page import Page
+from lstore.page import *
 from lstore.bufferpool import BufferPool
 from collections import defaultdict
 from threading import Lock
 import time
 import os
 
+# Record class
 class Record:
 
     def __init__(self, rid, key, columns):
@@ -14,7 +15,8 @@ class Record:
         self.key = key
         self.columns = columns
 
-# One pagerange tracks a set of base pages & tail pages
+# PageRange keeps track of base pages and tail pages
+# Base/Tail pages are logical concepts
 class PageRange:
 
     def __init__(self):
@@ -51,6 +53,7 @@ class PageRange:
         else:
             self.tail_page.append(Page())
             self.tail_page_index += 1
+        
 
     def last_base_page(self):
         return self.base_page_index == BASE_PAGE_MAX - 1
@@ -73,19 +76,22 @@ class Table:
         self.num_records = 0
         self.num_updates = 0
         self.key_RID = {}
-        
+
+        # Create lock objects for multi-threading
         self.lock_manager = defaultdict()
         self.new_record = Lock()
         self.update_record = Lock()
-        
+
+    # Retrieve RID given a key
     def get_rid(self, key):
         return self.key_RID[key]
-        
+    
+    # Set table path
     def set_path(self, path):
         self.table_path = path
         BufferPool.initial_path(self.table_path)
 
-    # using a number to find the location of the page 
+    # Use a number to find the location of the page 
     def determine_page_location(self, type):
         num_tail = self.num_updates
         num_base = self.num_records - num_tail
@@ -98,91 +104,97 @@ class Table:
             return page_range_index, tail_page_index
 
     # column is the insert data
+    # Writing data to base page(done on original insertion of records)
     def base_write(self, columns):
-        # self.new_record.acquire()
         page_range_index, base_page_index = self.determine_page_location('base')
-        for i, value in enumerate(columns):     
-            # use buffer_id to find the page
+        for i, value in enumerate(columns):
+            # Use buffer_id to find the page
             buffer_id = (self.name, "base", i, page_range_index, base_page_index)
             page = BufferPool.get_page(buffer_id)
-            
+
+            # If no room on page
             if not page.has_capacity():
+                # If last base page, new page range
                 if base_page_index == BASE_PAGE_MAX - 1:
                     page_range_index += 1
                     base_page_index = 0
+                # Else, go to next base page
                 else:
                     base_page_index += 1
+                # Use buffer_id to find the page
                 buffer_id = (self.name, "base", i, page_range_index, base_page_index)
             
             
-            # write in
+            # Write in to page
             page.write(value)
             offset = page.num_records - 1
-            BufferPool.updata_pool(buffer_id, page)  
+            BufferPool.add_pages(buffer_id, page)  
         
-        # write address into page directory
-        rid = columns[0]
+        # Write address into page directory
+        rid = columns[RID_COLUMN]
         address = [self.name, "base", page_range_index, base_page_index, offset]
         self.page_directory[rid] = address
         self.key_RID[columns[self.key_column + (META_COLUMN_COUNT + 1)]] = rid
         self.num_records += 1
         self.index.push_index(columns[(META_COLUMN_COUNT + 1):len(columns) + 1], rid)
-        # self.new_record.release()
-        
-
+    
+    # Writing data to tail pages
     def tail_write(self, columns):
-        # self.update_record.acquire()
         page_range_index, tail_page_index = self.determine_page_location('tail')
-        # print("column in baseWrite: {}".format(column))
         for i, value in enumerate(columns):
-            # use buffer_id to find the page
+            # Use buffer_id to find the page
             buffer_id = (self.name, "tail", i, page_range_index,tail_page_index)
             page = BufferPool.get_page(buffer_id)
-            
+
+            # If no room, go to next tail page
             if not page.has_capacity():
                 tail_page_index += 1
                 buffer_id = (self.name, "tail", i, page_range_index,tail_page_index)
                     
             page = BufferPool.get_page(buffer_id)
-            # write in
-            # print("value in tail_write: {} {}".format(i, value))
+            # Write in to page
             page.write(value)
             offset = page.num_records - 1
-            BufferPool.updata_pool(buffer_id, page)
+            BufferPool.add_pages(buffer_id, page)
             
-        # write address into page directory
-        rid = columns[0]
+        # Write address into page directory
+        rid = columns[RID_COLUMN]
         address = [self.name, "tail", page_range_index, tail_page_index, offset]
         self.page_directory[rid] = address
         self.key_RID[columns[self.key_column + (META_COLUMN_COUNT + 1)]] = rid
         self.num_records += 1
         self.num_updates += 1
-        # self.update_record.release()
-        
-    def find_value_rid(self, column_index, target):
+
+    # Find RIDs given column index & target(key)
+    def find_rids(self, column_index, target):
         rids = []
+        # Retrieve records from page_directory
         for rid in self.page_directory:
             record = self.find_record(rid)
+            # Check if matches target, add to rids
             if record[column_index + (META_COLUMN_COUNT + 1)] == target:
                 rids.append(rid)
         return rids
 
-    # pages is the given column that we are going to find the sid
+    # Use Bufferpool to find value in a page & return
     def find_value(self, column_index, location):
         buffer_id = (location[0], location[1], column_index, location[2], location[3])
         page = BufferPool.get_page(buffer_id)
         value = page.get_value(location[4])
         return value
-
+    
+    # Find and update value in a page
     def update_value(self, column_index, location, value):
         buffer_id = (location[0], location[1], column_index, location[2], location[3])
         page = BufferPool.get_page(buffer_id)
         page.update(location[4], value)
-        BufferPool.updata_pool(buffer_id, page)
+        BufferPool.add_pages(buffer_id, page)
 
+    # Find a record using the page directory & helper functions
     def find_record(self, rid):
         row = []
         location = self.page_directory[rid]
+        # Iterate through non-metadata columns to grab record data
         for i in range((META_COLUMN_COUNT + 1) + self.num_columns):
             result = self.find_value(i, location)
             row.append(result)

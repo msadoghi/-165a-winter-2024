@@ -3,8 +3,6 @@ from lstore.bufferpool import BufferPool
 import os
 import pickle
 
-
-
 class Database():
 
     def __init__(self):
@@ -12,7 +10,7 @@ class Database():
         self.db_path = ""
         pass
 
-    # Not required for milestone1
+    # Set working path/make a directiory
     def open(self, path):
         self.db_path = path
         BufferPool().initial_path(self.db_path)
@@ -32,9 +30,8 @@ class Database():
                 table.num_updates = metadata[5]
                 table.key_RID = metadata[6]
                 table.table_path = self.db_path
-        
-        
 
+    # Shut it down, throw everything into path and close
     def close(self):
         t_meta = {}
         for table in self.tables.values():

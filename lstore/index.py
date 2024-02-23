@@ -5,17 +5,16 @@ A data strucutre holding indices for various columns of a table. Key column shou
 from lstore.page import Page
 from BTrees.OOBTree import OOBTree
 
+# B Trees indexing
 class Index:
-
+    # One index per table, initially empty
     def __init__(self, table):
-        # One index for each table. All our empty initially.
         self.indices = [None for _ in range(table.num_columns)]
         self.key_column = table.key_column
         self.column_num = dict()
         self.table = table
-        
-        pass
 
+    # Check if table has index
     def has_index(self, column):
         if self.indices[column] == None:
             return False
@@ -25,11 +24,8 @@ class Index:
     """
     # returns the location of all records with the given value on column "column"
     """
-
     def locate(self, column, value):
-        #return_list = []
         column_btree = self.indices[column]
-        #print(type(column_btree))
         if not column_btree.has_key(value):
             return []
         return column_btree[value]
@@ -37,7 +33,6 @@ class Index:
     """
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"
     """
-
     def locate_range(self, begin, end, column):
         return_list = []
         column_btree = self.indices[column]
@@ -49,8 +44,8 @@ class Index:
     """
     # optional: Create index on specific column
     """
-
     def create_index(self, column_number):
+        # Check if column has index first, then create
         if self.indices[column_number] == None:
             self.indices[column_number] = OOBTree()
 
@@ -58,26 +53,21 @@ class Index:
     """
     # optional: Drop index of specific column
     """
-
     def drop_index(self, column_number):
-        #del self.indices[column_number]
+        # Just set to None
         self.indices[column_number] = None
 
-
+    # Force a key if there isn't a corresponding one
     def push_index(self, columns, rid):
+        # Iterate through table columns to check for indices
         for i in range(1, self.table.num_columns):
             if self.indices[i] == None:
                 self.create_index(i)
-            #print("indices:{}".format(self.indices))
+            # If the index does not have a key, set the given RID as the key
             if not self.indices[i].has_key(columns[i]):
-                self.indices[i][columns[i]]= [rid]
+                self.indices[i][columns[i]] = [rid]
+            # Otherwise, append to key list
+            # OOBTree keys == list
             else:
                 self.indices[i][columns[i]].append(rid)
             self.column_num[columns[i]] = i
-
-    '''
-    def lower_bound(self, list):
-        low, up=0, len(list)-1
-        while low<up:
-            mid=(low+up)//2
-    '''
